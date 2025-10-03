@@ -1,6 +1,7 @@
 import React from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import "./map.css";
 
 // FIX: iconos de marcador en Vite (si no, sale roto/cuadro vacío)
@@ -38,47 +39,6 @@ function distMeters(a, b) {
   const x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
   return 2 * R * Math.asin(Math.sqrt(x));
 }
-
-// ----- TTS: Web Speech (SpeechSynthesis) -----
-const TTS = (() => {
-  let utter = null;
-  let state = "idle"; // idle | speaking | paused
-
-  function play(text, { lang = "es-CO", rate = 1, pitch = 1 } = {}) {
-    stop(); // corta cualquier lectura anterior
-    utter = new SpeechSynthesisUtterance(text);
-    utter.lang = lang;
-    utter.rate = rate;
-    utter.pitch = pitch;
-    speechSynthesis.speak(utter);
-    state = "speaking";
-    return utter;
-  }
-
-  function pause() {
-    if (speechSynthesis.speaking && !speechSynthesis.paused) {
-      speechSynthesis.pause();
-      state = "paused";
-    }
-  }
-  function resume() {
-    if (speechSynthesis.paused) {
-      speechSynthesis.resume();
-      state = "speaking";
-    }
-  }
-  function stop() {
-    if (speechSynthesis.speaking || speechSynthesis.paused) {
-      speechSynthesis.cancel();
-    }
-    state = "idle";
-    utter = null;
-  }
-  function getState() { return state; }
-
-  return { play, pause, resume, stop, getState };
-})();
-
 
 export default function App() {
   const mapRef = React.useRef(null);
@@ -147,69 +107,15 @@ export default function App() {
         const cooldownMs = (p.cooldown_min ?? 15) * 60 * 1000;
         const cooled = !lastShown.current[p.id] || (now - lastShown.current[p.id] > cooldownMs);
         if (d <= p.radius_m && cooled) {
-          // ...dentro del if (d <= p.radius_m && cooled) { ... }
-          const uid = `tts-${p.id}`;
-          const popupHtml = `
-            <div style="max-width:260px">
-              <b>${p.title}</b><br/>
-              <div style="margin:6px 0 10px 0">${p.body ?? ""}</div>
-              <div style="display:flex; gap:8px">
-                <button id="${uid}-play" style="padding:6px 10px;border:1px solid #ccc;border-radius:8px;cursor:pointer">▶️ Escuchar</button>
-                <button id="${uid}-stop" style="padding:6px 10px;border:1px solid #ccc;border-radius:8px;cursor:pointer">⏹ Detener</button>
-              </div>
-            </div>
-          `;
-
-          const popup = L.popup({ closeOnClick: true })
+          lastShown.current[p.id] = now;
+          // Mostrar contenido (popup en el punto)
+          L.popup({ closeOnClick: true })
             .setLatLng([p.lat, p.lng])
-            .setContent(popupHtml)
+            .setContent(`<b>${p.title}</b><br>${p.body ?? ""}`)
             .openOn(mapRef.current);
 
-          // Espera a que el popup esté realmente insertado
-          const onOpen = (e) => {
-            if (e.popup !== popup) return;
-
-            const root = e.popup.getElement();
-            const playBtn = root.querySelector(`#${uid}-play`);
-            const stopBtn = root.querySelector(`#${uid}-stop`);
-
-            // Si el navegador no soporta TTS, oculta los botones
-            if (!("speechSynthesis" in window)) {
-              playBtn.style.display = "none";
-              stopBtn.style.display = "none";
-              return;
-            }
-
-            const lang  = p.tts_lang  || "es-CO";
-            const rate  = p.tts_rate  ?? 1;
-            const pitch = p.tts_pitch ?? 1;
-
-            const updatePlayLabel = () => {
-              const s = TTS.getState();
-              playBtn.textContent = s === "speaking" ? "⏸ Pausar" :
-                                    s === "paused"   ? "▶️ Reanudar" : "▶️ Escuchar";
-            };
-            updatePlayLabel();
-
-            playBtn.onclick = () => {
-              const s = TTS.getState();
-              if (s === "idle") TTS.play(p.body || "", { lang, rate, pitch });
-              else if (s === "speaking") TTS.pause();
-              else if (s === "paused") TTS.resume();
-              updatePlayLabel();
-            };
-
-            stopBtn.onclick = () => { TTS.stop(); updatePlayLabel(); };
-
-            // Al cerrar, detén lectura y limpia
-            const onClose = () => { TTS.stop(); mapRef.current.off("popupclose", onClose); };
-            mapRef.current.on("popupclose", onClose);
-
-            // Escucha solo una vez
-            mapRef.current.off("popupopen", onOpen);
-          };
-          mapRef.current.on("popupopen", onOpen);
-
+          // (Opcional) aquí podrías hacer fetch POST para loguear la visita
+          // fetch("/api/visit", { method:"POST", body: JSON.stringify({ place_id: p.id, at: new Date().toISOString() }) })
         }
       }
     };
