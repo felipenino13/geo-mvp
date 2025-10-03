@@ -5,6 +5,9 @@
     "title": "Parque 93", "body": "Eventos y restaurantes.", "media_url": "" },
   { "id": "usaquen", "lat": 4.6927, "lng": -74.0303, "radius_m": 120,
     "title": "Usaquén", "body": "Mercado de pulgas y cafés.", "media_url": "" },
-  { "id": "caiSiete", "lat": 4.7307289, "lng": -74.2226022, "radius_m": 120,
-    "title": "Cai siete trojes", "body": "En este cai salen a pasear tinta y tachi", "media_url": "" }
+  { "id": "centroFunza", "lat": 4.7161081, "lng": -74.2120075, "radius_m": 120,
+    "title": "Centro Funza la India", 
+    "body": 
+    "Algunos funzanos, coloquialmente, lo llaman “la india”, mientras que otros se refieren a “el indio”; una confusión que guarda un significado de gran valor, pues es una representación binaria. Por un lado simboliza a la mujer, dadora de vida y gran madre de los Muiscas, cargando a un niño: el pequeño dios Iguaque, al que Bachué cuidó como a un hijo. Por otra parte, representa al Cacique, jefe supremo, con su corona marcada con caracoles y su centro de mando.", 
+    "media_url": "" }
 ]
