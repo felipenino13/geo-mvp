@@ -1,6 +1,7 @@
 import React from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import "./map.css";
 
 // FIX: iconos de marcador en Vite (si no, sale roto/cuadro vacío)
@@ -12,6 +13,22 @@ L.Icon.Default.mergeOptions({
   iconUrl,
   iconRetinaUrl,
   shadowUrl,
+});
+
+// Ícono personalizado para “mi ubicación”
+const myLocationIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", // 🔵 un pin azul
+  iconSize: [32, 32], // tamaño
+  iconAnchor: [16, 32], // el “punto” del pin
+  popupAnchor: [0, -32]
+});
+
+// Ícono para puntos de interés
+const placeIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png", // 📍 rojo
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
+  popupAnchor: [0, -28]
 });
 
 function distMeters(a, b) {
@@ -50,7 +67,9 @@ export default function App() {
     if (!mapRef.current || places.length === 0) return;
     places.forEach(p => {
       L.circle([p.lat, p.lng], { radius: p.radius_m, color: "#1976d2" }).addTo(mapRef.current);
-      L.marker([p.lat, p.lng]).addTo(mapRef.current).bindPopup(`<b>${p.title}</b><br>${p.body ?? ""}`);
+      L.marker([p.lat, p.lng], { icon: placeIcon })  // ← aquí usas el ícono de lugar
+        .addTo(mapRef.current)
+        .bindPopup(`<b>${p.title}</b><br>${p.body ?? ""}`);
     });
   }, [places]);
 
@@ -67,7 +86,10 @@ export default function App() {
 
       // Actualizar marcador "yo"
       if (!meMarkerRef.current) {
-        meMarkerRef.current = L.marker([me.lat, me.lng], { title: "Tú" }).addTo(mapRef.current);
+        meMarkerRef.current = L.marker([me.lat, me.lng], { 
+        title: "Tú", 
+        icon: myLocationIcon 
+      }).addTo(mapRef.current);
       } else {
         meMarkerRef.current.setLatLng([me.lat, me.lng]);
       }
