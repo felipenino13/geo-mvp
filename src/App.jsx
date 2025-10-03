@@ -3,6 +3,17 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./map.css";
 
+// FIX: iconos de marcador en Vite (si no, sale roto/cuadro vacío)
+import iconUrl from "leaflet/dist/images/marker-icon.png";
+import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
+import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+
+L.Icon.Default.mergeOptions({
+  iconUrl,
+  iconRetinaUrl,
+  shadowUrl,
+});
+
 function distMeters(a, b) {
   const R = 6371000, toRad = d => d * Math.PI/180;
   const dLat = toRad(b.lat - a.lat);
