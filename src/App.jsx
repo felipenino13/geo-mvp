@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
 // Ícono personalizado para “mi ubicación”
 const myLocationIcon = L.icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", // 🔵 un pin azul
-  iconSize: [32, 32], // tamaño
+  iconSize: [16, 16], // tamaño
   iconAnchor: [16, 32], // el “punto” del pin
   popupAnchor: [0, -32]
 });
