@@ -1,0 +1,7 @@
+#map { height: 100vh; width: 100vw; }
+.leaflet-popup-content { font: 14px/1.4 system-ui, sans-serif; }
+.badge {
+  position: fixed; left: 12px; bottom: 12px;
+  background: #111; color: #fff; padding: 8px 12px; border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.2);
+}
