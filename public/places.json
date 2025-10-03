@@ -4,5 +4,7 @@
   { "id": "parque93", "lat": 4.6760, "lng": -74.0488, "radius_m": 120,
     "title": "Parque 93", "body": "Eventos y restaurantes.", "media_url": "" },
   { "id": "usaquen", "lat": 4.6927, "lng": -74.0303, "radius_m": 120,
-    "title": "Usaquén", "body": "Mercado de pulgas y cafés.", "media_url": "" }
+    "title": "Usaquén", "body": "Mercado de pulgas y cafés.", "media_url": "" },
+  { "id": "caiSiete", "lat": 4.7307289, "lng": -74.2226022, "radius_m": 120,
+    "title": "Cai siete trojes", "body": "En este cai salen a pasear tinta y tachi", "media_url": "" }
 ]
