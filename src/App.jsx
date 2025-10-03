@@ -117,7 +117,13 @@ export default function App() {
           // Mostrar contenido (popup en el punto)
           L.popup({ closeOnClick: true })
             .setLatLng([p.lat, p.lng])
-            .setContent(`<b>${p.title}</b><br>${p.body ?? ""}`)
+            .setContent(`
+              <div style="max-width:220px">
+                <b>${p.title}</b><br/>
+                ${p.image_url ? `<img src="${p.image_url}" alt="${p.title}" style="width:100%;border-radius:6px;margin:6px 0"/>` : ""}
+                <div>${p.body ?? ""}</div>
+              </div>
+            `)
             .openOn(mapRef.current);
 
           // (Opcional) aquí podrías hacer fetch POST para loguear la visita
