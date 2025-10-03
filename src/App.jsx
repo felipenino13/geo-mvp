@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
 // Ícono personalizado para “mi ubicación”
 const myLocationIcon = L.icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", // 🔵 un pin azul
-  iconSize: [16, 16], // tamaño
+  iconSize: [32, 32], // tamaño
   iconAnchor: [16, 32], // el “punto” del pin
   popupAnchor: [0, -32]
 });
@@ -69,7 +69,13 @@ export default function App() {
       L.circle([p.lat, p.lng], { radius: p.radius_m, color: "#1976d2" }).addTo(mapRef.current);
       L.marker([p.lat, p.lng], { icon: placeIcon })  // ← aquí usas el ícono de lugar
         .addTo(mapRef.current)
-        .bindPopup(`<b>${p.title}</b><br>${p.body ?? ""}`);
+        .bindPopup(`
+          <div style="max-width:220px">
+            <b>${p.title}</b><br/>
+            ${p.image_url ? `<img src="${p.image_url}" alt="${p.title}" style="width:100%;border-radius:6px;margin:6px 0"/>` : ""}
+            <div>${p.body ?? ""}</div>
+          </div>
+        `);
     });
   }, [places]);
 
