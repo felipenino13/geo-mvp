@@ -1,8 +1,21 @@
 [
   { "id": "monserrate", "lat": 4.6056, "lng": -74.0551, "radius_m": 120,
     "title": "Monserrate", "body": "Historia y vista de Bogotá.", "media_url": "" },
-  { "id": "parque93", "lat": 4.6760, "lng": -74.0488, "radius_m": 120,
-    "title": "Parque 93", "body": "Eventos y restaurantes.", "media_url": "" },
+  {
+  "id": "parque93",
+  "lat": 4.6760,
+  "lng": -74.0488,
+  "radius_m": 120,
+  "title": "Parque 93",
+  "body": "Evento 6–9 pm",
+  "media_url": "",
+  "cta_text": "Ver agenda",
+  "cta_url": "https://...",
+  "cooldown_min": 30,
+  "start_at": "17:30",
+  "end_at": "21:00"
+}
+,
   { "id": "usaquen", "lat": 4.6927, "lng": -74.0303, "radius_m": 120,
     "title": "Usaquén", "body": "Mercado de pulgas y cafés.", "media_url": "" },
   { "id": "caiSiete", "lat": 4.7307289, "lng": -74.2226022, "radius_m": 120,
