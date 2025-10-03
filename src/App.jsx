@@ -1,7 +1,6 @@
 import React from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import "./map.css";
 
 // FIX: iconos de marcador en Vite (si no, sale roto/cuadro vacío)
@@ -148,8 +147,7 @@ export default function App() {
         const cooldownMs = (p.cooldown_min ?? 15) * 60 * 1000;
         const cooled = !lastShown.current[p.id] || (now - lastShown.current[p.id] > cooldownMs);
         if (d <= p.radius_m && cooled) {
-          lastShown.current[p.id] = now;
-          // Mostrar contenido (popup con botones de voz)
+          // ...dentro del if (d <= p.radius_m && cooled) { ... }
           const uid = `tts-${p.id}`;
           const popupHtml = `
             <div style="max-width:260px">
@@ -162,53 +160,56 @@ export default function App() {
             </div>
           `;
 
-          L.popup({ closeOnClick: true })
+          const popup = L.popup({ closeOnClick: true })
             .setLatLng([p.lat, p.lng])
             .setContent(popupHtml)
             .openOn(mapRef.current);
 
-          // Importante: esperar a que el popup esté en el DOM para enganchar eventos
-          requestAnimationFrame(() => {
-            const playBtn = document.getElementById(`${uid}-play`);
-            const stopBtn = document.getElementById(`${uid}-stop`);
+          // Espera a que el popup esté realmente insertado
+          const onOpen = (e) => {
+            if (e.popup !== popup) return;
 
-            // Preferencias opcionales desde places.json
+            const root = e.popup.getElement();
+            const playBtn = root.querySelector(`#${uid}-play`);
+            const stopBtn = root.querySelector(`#${uid}-stop`);
+
+            // Si el navegador no soporta TTS, oculta los botones
+            if (!("speechSynthesis" in window)) {
+              playBtn.style.display = "none";
+              stopBtn.style.display = "none";
+              return;
+            }
+
             const lang  = p.tts_lang  || "es-CO";
-            const rate  = p.tts_rate  ?? 1;   // 0.1 – 10 (recomendado 0.8–1.2)
-            const pitch = p.tts_pitch ?? 1;   // 0 – 2
+            const rate  = p.tts_rate  ?? 1;
+            const pitch = p.tts_pitch ?? 1;
 
             const updatePlayLabel = () => {
               const s = TTS.getState();
-              playBtn.textContent = s === "speaking" ? "⏸ Pausar" : s === "paused" ? "▶️ Reanudar" : "▶️ Escuchar";
+              playBtn.textContent = s === "speaking" ? "⏸ Pausar" :
+                                    s === "paused"   ? "▶️ Reanudar" : "▶️ Escuchar";
             };
             updatePlayLabel();
 
             playBtn.onclick = () => {
-              const state = TTS.getState();
-              if (state === "idle") {
-                TTS.play(p.body || "", { lang, rate, pitch });
-              } else if (state === "speaking") {
-                TTS.pause();
-              } else if (state === "paused") {
-                TTS.resume();
-              }
+              const s = TTS.getState();
+              if (s === "idle") TTS.play(p.body || "", { lang, rate, pitch });
+              else if (s === "speaking") TTS.pause();
+              else if (s === "paused") TTS.resume();
               updatePlayLabel();
             };
 
-            stopBtn.onclick = () => {
-              TTS.stop();
-              updatePlayLabel();
-            };
+            stopBtn.onclick = () => { TTS.stop(); updatePlayLabel(); };
 
-            // Si el usuario cierra el popup, detenemos la lectura
-            mapRef.current.once("popupclose", () => {
-              TTS.stop();
-            });
+            // Al cerrar, detén lectura y limpia
+            const onClose = () => { TTS.stop(); mapRef.current.off("popupclose", onClose); };
+            mapRef.current.on("popupclose", onClose);
 
-            // Si cambia la pestaña, corta (evita hablar en background)
-            const onVis = () => { if (document.hidden) TTS.stop(); };
-            document.addEventListener("visibilitychange", onVis, { once: true });
-          });
+            // Escucha solo una vez
+            mapRef.current.off("popupopen", onOpen);
+          };
+          mapRef.current.on("popupopen", onOpen);
+
         }
       }
     };
