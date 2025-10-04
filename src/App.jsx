@@ -1,7 +1,6 @@
 import React from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import "./map.css";
 
 // FIX: iconos de marcador en Vite (si no, sale roto/cuadro vacío)
