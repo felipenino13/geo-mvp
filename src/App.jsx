@@ -3,35 +3,34 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import "./map.css";
 
-// FIX: iconos de marcador en Vite (si no, sale roto/cuadro vacío)
+// Fix íconos por defecto Leaflet (Vite)
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
 
-L.Icon.Default.mergeOptions({
-  iconUrl,
-  iconRetinaUrl,
-  shadowUrl,
-});
-
-// Ícono personalizado para “mi ubicación”
+// Ícono “mi ubicación”
 const myLocationIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png", // 🔵 un pin azul
-  iconSize: [32, 32], // tamaño
-  iconAnchor: [16, 32], // el “punto” del pin
-  popupAnchor: [0, -32]
+  iconUrl: "/icons/my-location.png", // pon el archivo en /public/icons/
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
 });
 
-// Ícono para puntos de interés
+// Ícono lugares
 const placeIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png", // 📍 rojo
+  iconUrl: "/icons/place.png", // pon el archivo en /public/icons/
   iconSize: [28, 28],
   iconAnchor: [14, 28],
-  popupAnchor: [0, -28]
+  popupAnchor: [0, -28],
 });
 
+// Radio global de cercanía para renderizar lugares (metros)
+const NEARBY_RADIUS_M = 5000; // 5 km
+
+// Distancia Haversine (m)
 function distMeters(a, b) {
-  const R = 6371000, toRad = d => d * Math.PI/180;
+  const R = 6371000, toRad = (d) => d * Math.PI / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
   const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
@@ -41,8 +40,11 @@ function distMeters(a, b) {
 
 export default function App() {
   const mapRef = React.useRef(null);
+  const placesLayerRef = React.useRef(null);
   const meMarkerRef = React.useRef(null);
+
   const [places, setPlaces] = React.useState([]);
+  const [myPos, setMyPos] = React.useState(null);
   const lastShown = React.useRef({}); // { [placeId]: timestamp }
 
   // Cargar puntos
@@ -56,29 +58,43 @@ export default function App() {
     const map = L.map("map").setView([4.65, -74.06], 13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 20,
-      attribution: "&copy; OpenStreetMap"
+      attribution: "&copy; OpenStreetMap",
     }).addTo(map);
+    placesLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
   }, []);
 
-  // Pintar places (círculos y marcadores)
-  React.useEffect(() => {
-    if (!mapRef.current || places.length === 0) return;
-    places.forEach(p => {
-      L.circle([p.lat, p.lng], { radius: p.radius_m, color: "#1976d2" }).addTo(mapRef.current);
-      L.marker([p.lat, p.lng], { icon: placeIcon })  // ← aquí usas el ícono de lugar
-        .addTo(mapRef.current)
+  // Dibuja (o redibuja) SOLO los lugares cercanos (≤ 5 km) según mi posición
+  const redrawNearbyPlaces = React.useCallback(() => {
+    if (!mapRef.current || !placesLayerRef.current) return;
+    const layer = placesLayerRef.current;
+    layer.clearLayers();
+
+    if (!myPos) return; // hasta no tener ubicación, no mostramos lugares
+
+    const nearby = places.filter(p =>
+      distMeters(myPos, { lat: p.lat, lng: p.lng }) <= NEARBY_RADIUS_M
+    );
+
+    nearby.forEach(p => {
+      L.circle([p.lat, p.lng], { radius: p.radius_m, color: "#1976d2", fillOpacity: 0.08 })
+        .addTo(layer);
+      L.marker([p.lat, p.lng], { icon: placeIcon })
+        .addTo(layer)
         .bindPopup(`
-          <div style="max-width:220px">
+          <div style="max-width:240px">
             <b>${p.title}</b><br/>
             ${p.image_url ? `<img src="${p.image_url}" alt="${p.title}" style="width:100%;border-radius:6px;margin:6px 0"/>` : ""}
             <div>${p.body ?? ""}</div>
           </div>
         `);
     });
-  }, [places]);
+  }, [places, myPos]);
 
-  // Tracking de ubicación + disparo de contenido
+  // Redibuja cuando cambie mi posición o el set de lugares
+  React.useEffect(() => { redrawNearbyPlaces(); }, [redrawNearbyPlaces]);
+
+  // Tracking de ubicación + geofences (sobre los cercanos)
   React.useEffect(() => {
     if (!mapRef.current) return;
     if (!("geolocation" in navigator)) {
@@ -88,45 +104,40 @@ export default function App() {
 
     const onPos = (pos) => {
       const me = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setMyPos(me);
 
-      // Actualizar marcador "yo"
+      // Marcador “yo”
       if (!meMarkerRef.current) {
-        meMarkerRef.current = L.marker([me.lat, me.lng], { 
-        title: "Tú", 
-        icon: myLocationIcon 
-      }).addTo(mapRef.current);
+        meMarkerRef.current = L.marker([me.lat, me.lng], { title: "Tú", icon: myLocationIcon })
+          .addTo(mapRef.current);
+        mapRef.current.setView([me.lat, me.lng], 15, { animate: true });
       } else {
         meMarkerRef.current.setLatLng([me.lat, me.lng]);
       }
 
-      // Centrar suave en la primera vez
-      if (!onPos._centered) {
-        mapRef.current.setView([me.lat, me.lng], 15, { animate: true });
-        onPos._centered = true;
-      }
-
-      // Chequear geofences
+      // Geofences solo sobre los cercanos
       const now = Date.now();
-      for (const p of places) {
+      const nearby = places.filter(p =>
+        distMeters(me, { lat: p.lat, lng: p.lng }) <= NEARBY_RADIUS_M
+      );
+
+      for (const p of nearby) {
         const d = distMeters(me, { lat: p.lat, lng: p.lng });
         const cooldownMs = (p.cooldown_min ?? 15) * 60 * 1000;
         const cooled = !lastShown.current[p.id] || (now - lastShown.current[p.id] > cooldownMs);
         if (d <= p.radius_m && cooled) {
           lastShown.current[p.id] = now;
-          // Mostrar contenido (popup en el punto)
           L.popup({ closeOnClick: true })
             .setLatLng([p.lat, p.lng])
             .setContent(`
-              <div style="max-width:220px">
+              <div style="max-width:240px">
                 <b>${p.title}</b><br/>
                 ${p.image_url ? `<img src="${p.image_url}" alt="${p.title}" style="width:100%;border-radius:6px;margin:6px 0"/>` : ""}
                 <div>${p.body ?? ""}</div>
               </div>
             `)
             .openOn(mapRef.current);
-
-          // (Opcional) aquí podrías hacer fetch POST para loguear la visita
-          // fetch("/api/visit", { method:"POST", body: JSON.stringify({ place_id: p.id, at: new Date().toISOString() }) })
+          break; // evita múltiples popups a la vez
         }
       }
     };
@@ -140,7 +151,11 @@ export default function App() {
   return (
     <>
       <div id="map" />
-      <div className="badge">Concede ubicación para activar el contenido por zona.</div>
+      <div className="badge">
+        {myPos
+          ? "Mostrando lugares a ≤ 5 km de tu ubicación."
+          : "Concede ubicación para activar el contenido por zona."}
+      </div>
     </>
   );
 }
